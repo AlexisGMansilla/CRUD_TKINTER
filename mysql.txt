@@ -1,0 +1,3 @@
+create database crud_tkinter;
+use crud_tkinter;
+INSERT INTO Usuarios (usuNombre, usuClave) VALUES ('admin', 'admin');

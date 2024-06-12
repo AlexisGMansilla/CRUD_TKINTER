@@ -66,6 +66,14 @@ class Database:
             messagebox.showinfo("Conexion","Tablas creadas correctamente")
         except:
             messagebox.showinfo("Conexion", "Conexion Exitosa en la BDs")
+    
+    def verificar_usuario(self, username, password):
+        self.conexion()
+        cursor = self.conexionBD.cursor()
+        cursor.execute("SELECT * FROM USUARIOS WHERE usuNombre = %s AND usuClave = %s", (username, password))
+        usuario = cursor.fetchone()
+        self.conexionBD.close()
+        return usuario
 
 
 class Inventario:
@@ -95,11 +103,10 @@ class Inventario:
     def login(self):
         username = self.entry_username.get()
         password = self.entry_password.get()
-
-        if username == "admin" and password == "admin":
+        usuario = self.db.verificar_usuario(username, password)
+        if usuario:
             messagebox.showinfo("Login", "Login Correcto!")
             self.login_frame.pack_forget()
-            # self.root.destroy() 
             self.root.title("Inventario")
             self.menu_principal = tk.Frame(self.root)
             self.menu_principal.pack()
@@ -136,6 +143,8 @@ class Inventario:
         tk.Button(self.menu_proveedores, text="Nuevo", command=self.agregar_proveedor).grid(row=3, column=0)
         tk.Button(self.menu_proveedores, text="Modificar", command=self.modificar_proveedor).grid(row=3, column=1)
         tk.Button(self.menu_proveedores, text="Eliminar", command=self.eliminar_proveedor).grid(row=3, column=2)
+        tk.Button(self.menu_proveedores, text="Listar", command=self.cargar_proveedores).grid(row=4, column=1)
+
         
         self.tree_proveedores = ttk.Treeview(self.menu_proveedores, 
                                              columns=("Nombre", "Domicilio", "Telefono"), show='headings')
@@ -143,7 +152,7 @@ class Inventario:
         self.tree_proveedores.heading("Nombre", text="Nombre")
         self.tree_proveedores.heading("Domicilio", text="Domicilio")
         self.tree_proveedores.heading("Telefono", text="Telefono")
-        self.tree_proveedores.grid(row=4, column=0, columnspan=3)
+        self.tree_proveedores.grid(row=5, column=0, columnspan=3)
         self.tree_proveedores.bind("<Double-1>", self.seleccionarusandoclick)
         self.cargar_proveedores()
 
@@ -437,11 +446,12 @@ class Inventario:
         tk.Button(self.menu_categorias, text="Nuevo", command=self.agregar_categoria).grid(row=1, column=0)
         tk.Button(self.menu_categorias, text="Modificar", command=self.modificar_categoria).grid(row=1, column=1)
         tk.Button(self.menu_categorias, text="Eliminar", command=self.eliminar_categoria).grid(row=1, column=2)
+        tk.Button(self.menu_categorias, text="Listar", command=self.cargar_categorias).grid(row=2, column=1)
 
         self.tree_categorias = ttk.Treeview(self.menu_categorias, columns=("ID", "Descripción"), show='headings')
         self.tree_categorias.heading("ID", text="ID")
         self.tree_categorias.heading("Descripción", text="Descripción")
-        self.tree_categorias.grid(row=2, column=0, columnspan=3)
+        self.tree_categorias.grid(row=3, column=0, columnspan=3)
 
 
         self.tree_categorias.bind("<Double-1>", self.seleccionar_categoria)
