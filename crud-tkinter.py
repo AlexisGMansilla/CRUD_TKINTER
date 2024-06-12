@@ -68,13 +68,6 @@ class Database:
             messagebox.showinfo("Conexion", "Conexion Exitosa en la BDs")
 
 
-
-
-
-
-
-
-
 class Inventario:
     def __init__(self, root, database):
         self.root = root
@@ -234,23 +227,6 @@ class Inventario:
         except:
             messagebox.showerror("No se pudo cargar los proveedores")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def productos(self):
         self.menu_productos = tk.Toplevel(self.root)
         self.menu_productos.title("Productos")
@@ -274,15 +250,15 @@ class Inventario:
         self.entry_precio = tk.Entry(self.menu_productos, textvariable=self.producto_Precio)
         self.entry_stock = tk.Entry(self.menu_productos, textvariable=self.producto_Stock)
         self.entry_stock_min = tk.Entry(self.menu_productos, textvariable=self.producto_StockMin)
-        self.entry_categoria = tk.Entry(self.menu_productos, textvariable=self.producto_Categoria)
-        self.entry_proveedor = tk.Entry(self.menu_productos, textvariable=self.producto_Proveedor)
+        self.combo_categoria = ttk.Combobox(self.menu_productos, textvariable=self.producto_Categoria)
+        self.combo_proveedor = ttk.Combobox(self.menu_productos, textvariable=self.producto_Proveedor)
         
         self.entry_descripcion.grid(row=0, column=1)
         self.entry_precio.grid(row=1, column=1)
         self.entry_stock.grid(row=2, column=1)
         self.entry_stock_min.grid(row=3, column=1)
-        self.entry_categoria.grid(row=4, column=1)
-        self.entry_proveedor.grid(row=5, column=1)
+        self.combo_categoria.grid(row=4, column=1)
+        self.combo_proveedor.grid(row=5, column=1)
 
         tk.Button(self.menu_productos, text="Nuevo", command=self.agregar_producto).grid(row=6, column=0)
         tk.Button(self.menu_productos, text="Modificar", command=self.modificar_producto).grid(row=6, column=1)
@@ -301,19 +277,39 @@ class Inventario:
         self.tree_productos.heading("Proveedor", text="Proveedor")
         self.tree_productos.grid(row=7, column=0, columnspan=3)
         self.tree_productos.bind("<Double-1>", self.seleccionar_producto)
+        self.cargar_categorias_combobox()
+        self.cargar_proveedores_combobox()
         self.cargar_productos()
 
+    def cargar_categorias_combobox(self):
+        self.db.conexion()
+        cursor = self.db.conexionBD.cursor()
+        try:
+            cursor.execute("SELECT catDescripcion FROM Categorias")
+            categorias = cursor.fetchall()
+            self.combo_categoria['values'] = categorias
+        except:
+            messagebox.showerror("Error", "No se pudieron cargar las categorías")
 
+    def cargar_proveedores_combobox(self):
+        self.db.conexion()
+        cursor = self.db.conexionBD.cursor()
+        try:
+            cursor.execute("SELECT provNom FROM Proveedores")
+            proveedores = cursor.fetchall()
+            self.combo_proveedor['values'] = proveedores
+        except:
+            messagebox.showerror("Error", "No se pudieron cargar los proveedores")
 
     def seleccionar_producto(self, event):
         item = self.tree_productos.selection()[0]
-        self.producto_ID.set(self.tree_productos.item(item, "values")[0])
-        self.producto_Descripcion.set(self.tree_productos.item(item, "values")[1])
-        self.producto_Precio.set(self.tree_productos.item(item, "values")[2])
-        self.producto_Stock.set(self.tree_productos.item(item, "values")[3])
-        self.producto_StockMin.set(self.tree_productos.item(item, "values")[4])
-        self.producto_Categoria.set(self.tree_productos.item(item, "values")[5])
-        self.producto_Proveedor.set(self.tree_productos.item(item, "values")[6])
+        self.producto_ID.set(self.tree_productos.item(item, "text"))
+        self.producto_Descripcion.set(self.tree_productos.item(item, "values")[0])
+        self.producto_Precio.set(self.tree_productos.item(item, "values")[1]) 
+        self.producto_Stock.set(self.tree_productos.item(item, "values")[2])  
+        self.producto_StockMin.set(self.tree_productos.item(item, "values")[3]) 
+        self.producto_Categoria.set(self.tree_productos.item(item, "values")[4]) 
+        self.producto_Proveedor.set(self.tree_productos.item(item, "values")[5])  
 
     def borrar_campos_producto(self):
         self.producto_ID.set("")
@@ -323,28 +319,33 @@ class Inventario:
         self.producto_StockMin.set("")
         self.producto_Categoria.set("")
         self.producto_Proveedor.set("")
-
+    
     def agregar_producto(self):
         descripcion = self.entry_descripcion.get()
         precio = self.entry_precio.get()
         stock = self.entry_stock.get()
         stock_min = self.entry_stock_min.get()
-        categoria = self.entry_categoria.get()
-        proveedor = self.entry_proveedor.get()
+        categoria_desc = self.combo_categoria.get()
+        proveedor_nom = self.combo_proveedor.get()
         
         self.db.conexion()
         cursor = self.db.conexionBD.cursor()
         try:
+            cursor.execute("SELECT catId FROM Categorias WHERE catDescripcion = %s", (categoria_desc,))
+            categoria_id = cursor.fetchone()[0] 
+
+            cursor.execute("SELECT provId FROM Proveedores WHERE provNom = %s", (proveedor_nom,))
+            proveedor_id = cursor.fetchone()[0] 
+
             cursor.execute(
                 "INSERT INTO Productos (prodDesc, prodPrecio, prodStock, prodStockMin, catId, provId) VALUES (%s, %s, %s, %s, %s, %s)",
-                (descripcion, precio, stock, stock_min, categoria, proveedor))
+                (descripcion, precio, stock, stock_min, categoria_id, proveedor_id))
             self.db.conexionBD.commit()
             messagebox.showinfo("Éxito", "Producto agregado correctamente")
             self.cargar_productos()
             self.borrar_campos_producto()
         except:
-            messagebox.showerror("No se pudo agregar el producto")
-
+            messagebox.showerror("ERROR", "No se pudo agregar el producto")
 
     def modificar_producto(self):
         prodId = self.producto_ID.get()
@@ -356,21 +357,27 @@ class Inventario:
         precio = self.entry_precio.get()
         stock = self.entry_stock.get()
         stock_min = self.entry_stock_min.get()
-        categoria = self.entry_categoria.get()
-        proveedor = self.entry_proveedor.get()
+        categoria_desc = self.combo_categoria.get()
+        proveedor_nom = self.combo_proveedor.get()
         
         self.db.conexion()
         cursor = self.db.conexionBD.cursor()
         try:
+            cursor.execute("SELECT catId FROM Categorias WHERE catDescripcion = %s", (categoria_desc,))
+            categoria_id = cursor.fetchone()[0] 
+
+            cursor.execute("SELECT provId FROM Proveedores WHERE provNom = %s", (proveedor_nom,))
+            proveedor_id = cursor.fetchone()[0] 
+            
             cursor.execute(
                 "UPDATE Productos SET prodDesc=%s, prodPrecio=%s, prodStock=%s, prodStockMin=%s, catId=%s, provId=%s WHERE prodId=%s",
-                (descripcion, precio, stock, stock_min, categoria, proveedor, prodId))
+                (descripcion, precio, stock, stock_min, categoria_id, proveedor_id, prodId))
             self.db.conexionBD.commit()
             messagebox.showinfo("Éxito", "Producto modificado correctamente")
             self.cargar_productos()
             self.borrar_campos_producto()
         except:
-            messagebox.showerror("No se pudo modificar el producto")
+            messagebox.showerror("ERROR", "No se pudo modificar el producto")
 
     def eliminar_producto(self):
         prodId = self.producto_ID.get()
@@ -387,36 +394,31 @@ class Inventario:
             self.cargar_productos()
             self.borrar_campos_producto()
         except:
-            messagebox.showerror("No se pudo eliminar el producto")
-
+            messagebox.showerror("ERROR", "No se pudo eliminar el producto")
+        
     def cargar_productos(self):
         self.db.conexion()
         cursor = self.db.conexionBD.cursor()
         try:
-            cursor.execute("SELECT * FROM Productos")
+            cursor.execute(
+                "SELECT P.prodId, P.prodDesc, P.prodPrecio, P.prodStock, P.prodStockMin, C.catDescripcion, Pr.provNom "
+                "FROM Productos P "
+                "JOIN Categorias C ON P.catId = C.catId "
+                "JOIN Proveedores Pr ON P.provId = Pr.provId"
+            )
             registros = cursor.fetchall()
-            for row in self.tree_productos.get_children():
-                self.tree_productos.delete(row)
+            self.tree_productos.delete(*self.tree_productos.get_children())
             for registro in registros:
-                self.tree_productos.insert('', 'end', values=registro)
+                self.tree_productos.insert('', 'end', values=(
+                    registro[1], 
+                    registro[2], 
+                    registro[3],  
+                    registro[4], 
+                    registro[5],  
+                    registro[6]   
+                ), text=registro[0]) 
         except:
-            messagebox.showerror("No se pudieron cargar los productos")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            messagebox.showerror("ERROR", "No se pudieron cargar los productos")
 
 
 # Categorias
@@ -521,15 +523,6 @@ class Inventario:
             self.borrar_campos_categoria()
         except:
             messagebox.showerror("Error", "No se pudo eliminar la categoria")
-
-
-
-
-
-
-
-
-
 
 
     def salir(self):
